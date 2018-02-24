@@ -33,6 +33,8 @@ namespace System.Linq
                     }
                 }
             }
+#elif MONADIC
+            return source.SelectMany(x => predicate(x) ? Return(x) : Empty<T>());
 #else
             return new WhereAsyncIteratorWithSyncPredicate<T>(source, predicate);
 #endif
@@ -58,6 +60,8 @@ namespace System.Linq
                     }
                 }
             }
+#elif MONADIC
+            return source.SelectMany(async x => await predicate(x).ConfigureAwait(false) ? Return(x) : Empty<T>());
 #else
             return new WhereAsyncIteratorWithAsyncPredicate<T>(source, predicate);
 #endif

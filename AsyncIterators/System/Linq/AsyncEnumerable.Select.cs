@@ -30,6 +30,8 @@ namespace System.Linq
                     yield return selector(item);
                 }
             }
+#elif MONADIC
+            return source.SelectMany(x => Return(selector(x)));
 #else
             return new SelectAsyncIteratorWithSyncSelector<T, R>(source, selector);
 #endif
@@ -52,6 +54,8 @@ namespace System.Linq
                     yield return selector(item).ConfigureAwait(false);
                 }
             }
+#elif MONADIC
+            return source.SelectMany(async x => Return(await selector(x).ConfigureAwait(false)));
 #else
             return new SelectAsyncIteratorWithAsyncSelector<T, R>(source, selector);
 #endif
