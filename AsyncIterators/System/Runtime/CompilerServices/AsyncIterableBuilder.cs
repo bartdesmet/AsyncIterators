@@ -4,7 +4,6 @@
 // bartde - February 2018
 //
 
-
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
