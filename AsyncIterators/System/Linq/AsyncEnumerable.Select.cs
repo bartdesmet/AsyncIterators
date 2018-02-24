@@ -1,4 +1,10 @@
-﻿using System.Collections.Generic;
+﻿//
+// Prototype of async iterators using WaitForNextAsync/TryGetNext.
+//
+// bartde - February 2018
+//
+
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
