@@ -43,6 +43,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MyObservableAsyncIterator.cs" />
+    <Compile Include="ObservableAsyncIterator.cs" />
     <Compile Include="System\Linq\AsyncEnumerable.SelectMany.cs" />
     <Compile Include="System\Linq\AsyncEnumerable.Watch.cs" />
     <Compile Include="System\Linq\AsyncEnumerable.Debug.cs" />

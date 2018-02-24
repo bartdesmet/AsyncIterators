@@ -7,7 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace AsyncIterators
@@ -52,12 +51,13 @@ namespace AsyncIterators
                 ("Where(Func<T, Task<bool>>).Select(Func<T, Task<R>>)", Enumerable.Range(0, 100).ToAsyncEnumerable().Where(async x => { await Task.Delay(10); return x % 10 == 0; }).Select(async x => { await Task.Delay(10); return x + 1; })),
                 ("Where(Func<T, bool>).Select(Func<T, R>) - Trace", Enumerable.Range(0, 100).ToAsyncEnumerable().Debug("Range").Where(x => x % 10 == 0).Debug("Where").Select(x => x + 1).Debug("Select")),
                 ("Where(Func<T, Task<bool>>).Select(Func<T, Task<R>>) - Trace", Enumerable.Range(0, 100).ToAsyncEnumerable().Debug("Range").Where(async x => { await Task.Delay(10); return x % 10 == 0; }).Debug("Where").Select(async x => { await Task.Delay(10); return x + 1; }).Debug("Select")),
-                ("Yield", Enumerable.Range(0, 10).ToAsyncEnumerable().Yield()),
-                ("Yield - Trace", Enumerable.Range(0, 10).ToAsyncEnumerable().Debug("Range").Yield().Debug("Yield")), // DEBUG
+
                 ("SelectMany(..., Func<T, C, R>)", Enumerable.Range(1, 5).ToAsyncEnumerable().SelectMany(i => Enumerable.Range(1, i).ToAsyncEnumerable(), (i, j) => i * 10 + j)),
                 ("SelectMany(..., Func<T, C, Task<R>>) - FromResult", Enumerable.Range(1, 5).ToAsyncEnumerable().SelectMany(i => Enumerable.Range(1, i).ToAsyncEnumerable(), (i, j) => Task.FromResult(i * 10 + j))),
                 ("SelectMany(..., Func<T, C, Task<R>>) - Delay", Enumerable.Range(1, 5).ToAsyncEnumerable().SelectMany(i => Enumerable.Range(1, i).ToAsyncEnumerable(), async (i, j) => { await Task.Delay(10); return i * 10 + j; })),
-                ("Yield - Trace", AsyncEnumerable.ToAsyncEnumerable(1, 2).Yield().Debug("Yield")), // DEBUG
+
+                ("Yield", Enumerable.Range(0, 10).ToAsyncEnumerable().Yield()),
+                ("Yield - Trace", Enumerable.Range(0, 10).ToAsyncEnumerable().Debug("Range").Yield().Debug("Yield")),
 #endif
             })
             {
@@ -72,8 +72,6 @@ namespace AsyncIterators
 
                 Console.WriteLine();
             }
-
-            return;
 
             await CompareAsync(
                 ("Sync", watcher => Enumerable.Range(0, 100).ToAsyncEnumerable().Watch(watcher).Where(x => x % 10 == 0).Watch(watcher).Select(x => x + 1).Watch(watcher)),
@@ -160,94 +158,5 @@ namespace AsyncIterators
 
             public void Report(T value) => action(value);
         }
-    }
-
-    public class MyObservableAsyncIterator : ObservableAsyncIterator<int, MyObservableAsyncIterator>
-    {
-        protected override MyObservableAsyncIterator Clone() => new MyObservableAsyncIterator();
-
-        protected override int TryMoveNext(int state, bool shouldBreak, out bool? hasNext, out int nextState)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public abstract class ObservableAsyncIterator<T, TIterable> : AsyncIterableBuilder<T, TIterable>, IObservable<T>, IDisposable
-        where TIterable : ObservableAsyncIterator<T, TIterable>
-    {
-        private int __initialThreadId;
-        private IObserver<T> __observer;
-        private int __state;
-        private bool __dispose;
-
-        protected ObservableAsyncIterator()
-        {
-            __initialThreadId = Environment.CurrentManagedThreadId;
-        }
-
-        public void Dispose() => __dispose = true;
-
-        public IDisposable Subscribe(IObserver<T> observer)
-        {
-            if (__observer == null && __initialThreadId == Environment.CurrentManagedThreadId)
-            {
-                return SubscribeCore(observer);
-            }
-            else
-            {
-                TIterable clone = Clone();
-                return clone.SubscribeCore(observer);
-            }
-        }
-
-        private IDisposable SubscribeCore(IObserver<T> observer)
-        {
-            __observer = observer;
-
-            Run();
-
-            return this;
-        }
-
-        private void Run()
-        {
-            while (true)
-            {
-                T result = TryMoveNext(__state, shouldBreak: __dispose, out var hasNext, out var nextState);
-
-                if (hasNext == null)
-                {
-                    break;
-                }
-                else if (hasNext == true)
-                {
-                    __observer.OnNext(result);
-                    __state = nextState;
-                }
-                else
-                {
-                    __observer.OnCompleted();
-                    __state = nextState;
-                }
-            }
-        }
-
-        protected override void AwaitOnCompleted<TAwaiter>(int nextState, ref TAwaiter awaiter)
-        {
-            __state = nextState;
-            awaiter.OnCompleted(Run);
-        }
-
-        protected override void AwaitUnsafeOnCompleted<TAwaiter>(int nextState, ref TAwaiter awaiter)
-        {
-            __state = nextState;
-            awaiter.OnCompleted(Run);
-        }
-
-        protected override void OnDisposed() { }
-
-        protected override void OnDisposing() { }
-
-        protected override bool ShouldYieldReturn() => !__dispose;
     }
 }
